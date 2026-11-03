@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -96,15 +97,17 @@ fun MoreScreen(vm: MainViewModel, open: (String) -> Unit) {
     val guests by vm.guests.collectAsStateWithLifecycle()
     val expenses by vm.expenses.collectAsStateWithLifecycle()
     val cfg by vm.config.collectAsStateWithLifecycle()
+    val placesState by vm.places.collectAsStateWithLifecycle()
 
     data class Entry(val emoji: String, val title: String, val sub: String, val bg: Color, val route: String)
     val confirmed = guests.filter { it.status == GuestStatus.CONFIRMED }
     val entries = listOf(
+        Entry("📍", "Lugares", "${placesState.size} opções • ${placesState.count { it.status == gegeparty.guigol.com.data.PlaceStatus.SELECTED }} escolhido(s)", Gege.PinkSoft, "places"),
         Entry("💡", "Ideias", "${ideas.size} ideias • ${ideas.count { it.approved }} aprovadas", Gege.YellowSoft, "ideas"),
         Entry("📝", "Bloco de notas", "${notes.size} notas", Gege.LilacSoft, "notes"),
         Entry("👯", "Convidados", "${confirmed.size + confirmed.sumOf { it.plusOnes }} confirmados de ${guests.size + guests.sumOf { it.plusOnes }}", Gege.MintSoft, "guests"),
         Entry("💰", "Orçamento", Fmt.money(expenses.sumOf { it.amount }) + if (cfg.budget > 0) " de ${Fmt.money(cfg.budget)}" else "", Gege.SkySoft, "budget"),
-        Entry("⚙️", "Ajustes da festa", "Data, nome, orçamento, notificações", Gege.PinkSoft, "settings"),
+        Entry("⚙️", "Ajustes da festa", "Data, nome, orçamento, notificações", Gege.Bg, "settings"),
     )
 
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -140,7 +143,7 @@ fun IdeasScreen(vm: MainViewModel, onBack: () -> Unit) {
         when (cat) { "Todas" -> true; "⭐ Aprovadas" -> it.approved; else -> it.category == cat }
     }.sortedWith(compareByDescending<Idea> { it.approved }.thenByDescending { it.likes.size })
 
-    Scaffold(containerColor = Gege.Bg, floatingActionButton = { AddFab("Nova ideia", { editing = Idea(category = if (cat in Defaults.ideaCategories) cat else "Geral") }) }) { pad ->
+    Scaffold(containerColor = Gege.Bg, contentWindowInsets = WindowInsets(0, 0, 0, 0), floatingActionButton = { AddFab("Nova ideia", { editing = Idea(category = if (cat in Defaults.ideaCategories) cat else "Geral") }) }) { pad ->
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             modifier = Modifier.fillMaxSize().padding(pad),
@@ -177,6 +180,9 @@ fun IdeasScreen(vm: MainViewModel, onBack: () -> Unit) {
                         UserBadge(idea.createdBy, compact = true)
                         Spacer(Modifier.weight(1f))
                         Text(idea.likes.joinToString("") { Users.emoji(it) }, style = MaterialTheme.typography.labelMedium)
+                        IconButton(onClick = { vm.sendMessage("Olha essa ideia!", "💡 ${idea.title}", "ideas") }, modifier = Modifier.size(36.dp)) {
+                            Text("💬")
+                        }
                         IconButton(onClick = { vm.toggleLike(Collections.IDEAS, idea.id, idea.likes) }, modifier = Modifier.size(36.dp)) {
                             Icon(if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, "Curtir", tint = Gege.Pink, modifier = Modifier.size(20.dp))
                         }
@@ -218,7 +224,7 @@ fun NotesScreen(vm: MainViewModel, onBack: () -> Unit) {
     var editing by remember { mutableStateOf<Note?>(null) }
     val sorted = notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
 
-    Scaffold(containerColor = Gege.Bg, floatingActionButton = { AddFab("Nova nota", { editing = Note() }) }) { pad ->
+    Scaffold(containerColor = Gege.Bg, contentWindowInsets = WindowInsets(0, 0, 0, 0), floatingActionButton = { AddFab("Nova nota", { editing = Note() }) }) { pad ->
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             modifier = Modifier.fillMaxSize().padding(pad),
@@ -288,7 +294,7 @@ fun GuestsScreen(vm: MainViewModel, onBack: () -> Unit) {
     val confirmed = guests.filter { it.status == GuestStatus.CONFIRMED }
     val list = guests.filter { filter == "todos" || it.status == filter }
 
-    Scaffold(containerColor = Gege.Bg, floatingActionButton = { AddFab("Convidado", { editing = Guest() }) }) { pad ->
+    Scaffold(containerColor = Gege.Bg, contentWindowInsets = WindowInsets(0, 0, 0, 0), floatingActionButton = { AddFab("Convidado", { editing = Guest() }) }) { pad ->
         LazyColumn(Modifier.fillMaxSize().padding(pad), contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 ScreenHeader("Convidados", "${people(confirmed)} confirmados de ${people(guests)} pessoas", onBack)
@@ -395,7 +401,7 @@ fun BudgetScreen(vm: MainViewModel, onBack: () -> Unit) {
     val total = expenses.sumOf { it.amount }
     val paid = expenses.filter { it.paid }.sumOf { it.amount }
 
-    Scaffold(containerColor = Gege.Bg, floatingActionButton = { AddFab("Gasto", { editing = Expense() }) }) { pad ->
+    Scaffold(containerColor = Gege.Bg, contentWindowInsets = WindowInsets(0, 0, 0, 0), floatingActionButton = { AddFab("Gasto", { editing = Expense() }) }) { pad ->
         LazyColumn(Modifier.fillMaxSize().padding(pad), contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
                 ScreenHeader("Orçamento", "Quanto vai custar essa alegria 💸", onBack)
@@ -484,6 +490,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     var budget by remember { mutableStateOf(Fmt.moneyInput(cfg.budget)) }
     var news by remember { mutableStateOf(Prefs.notifyNews(ctx)) }
     var countdown by remember { mutableStateOf(Prefs.notifyCountdown(ctx)) }
+    var chat by remember { mutableStateOf(Prefs.notifyChat(ctx)) }
     var confirmLogout by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) }
 
@@ -518,6 +525,7 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 Text("Notificações", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 SettingSwitch("Avisar quando ${Users.display(Users.other(vm.me))} adicionar algo", news) { news = it; Prefs.setNotifyNews(ctx, it) }
+                SettingSwitch("Mensagens do chat", chat) { chat = it; Prefs.setNotifyChat(ctx, it) }
                 SettingSwitch("Contagem regressiva diária", countdown) { countdown = it; Prefs.setNotifyCountdown(ctx, it) }
                 Text("Lembretes da agenda são configurados em cada evento.", style = MaterialTheme.typography.labelMedium, color = Gege.InkSoft)
             }

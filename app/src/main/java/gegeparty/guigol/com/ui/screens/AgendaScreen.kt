@@ -2,6 +2,7 @@ package gegeparty.guigol.com.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -74,7 +75,7 @@ fun AgendaScreen(vm: MainViewModel) {
     val (past, future) = events.partition { it.dateMillis < startToday }
     val byDay = future.groupBy { Fmt.localDate(it.dateMillis) }.toSortedMap()
 
-    Scaffold(containerColor = Gege.Bg, floatingActionButton = { AddFab("Novo evento", { editing = EventItem() }, fab) }) { pad ->
+    Scaffold(containerColor = Gege.Bg, contentWindowInsets = WindowInsets(0, 0, 0, 0), floatingActionButton = { AddFab("Novo evento", { editing = EventItem() }, fab) }) { pad ->
         LazyColumn(
             state = listState, modifier = Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)

@@ -43,6 +43,8 @@ object Collections {
     const val PLACES = "places"
     const val GUESTS = "guests"
     const val EXPENSES = "expenses"
+    const val MESSAGES = "messages"
+    const val PRESENCE = "presence"
     const val CONFIG = "config"
     const val PARTY_DOC = "party"
 }
@@ -182,6 +184,18 @@ data class Expense(
     var paidBy: String = Users.BOTH,
     var createdBy: String = "",
     var createdAt: Long = 0L,
+) : HasId
+
+// ---------- Chat ----------
+data class ChatMessage(
+    @get:Exclude override var id: String = "",
+    var text: String = "",
+    var sender: String = "",
+    var createdAt: Long = 0L,
+    var reactions: Map<String, String> = emptyMap(), // usuário -> emoji
+    var readBy: List<String> = emptyList(),
+    var attachTitle: String = "", // item compartilhado (lugar, ideia…)
+    var attachRoute: String = "",
 ) : HasId
 
 // ---------- Configuração da festa ----------

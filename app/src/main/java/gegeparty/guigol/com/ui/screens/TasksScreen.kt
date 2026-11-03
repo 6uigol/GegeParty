@@ -3,6 +3,7 @@ package gegeparty.guigol.com.ui.screens
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -104,6 +105,7 @@ fun TasksScreen(vm: MainViewModel) {
 
     Scaffold(
         containerColor = Gege.Bg,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = { AddFab("Nova tarefa", { editing = TaskItem(assignee = Users.BOTH) }, fabExpanded) },
     ) { pad ->
         LazyColumn(

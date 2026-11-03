@@ -3,6 +3,7 @@ package gegeparty.guigol.com.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -61,7 +62,7 @@ import gegeparty.guigol.com.ui.components.StarRating
 import gegeparty.guigol.com.ui.theme.Gege
 
 @Composable
-fun PlacesScreen(vm: MainViewModel) {
+fun PlacesScreen(vm: MainViewModel, onBack: (() -> Unit)? = null) {
     val places by vm.places.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf("todos") }
     var editing by remember { mutableStateOf<Place?>(null) }
@@ -75,14 +76,14 @@ fun PlacesScreen(vm: MainViewModel) {
 
     fun launch(uri: String) = runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
 
-    Scaffold(containerColor = Gege.Bg, floatingActionButton = { AddFab("Novo lugar", { editing = Place() }, fab) }) { pad ->
+    Scaffold(containerColor = Gege.Bg, contentWindowInsets = WindowInsets(0, 0, 0, 0), floatingActionButton = { AddFab("Novo lugar", { editing = Place() }, fab) }) { pad ->
         LazyColumn(
             state = listState, modifier = Modifier.fillMaxSize().padding(pad),
             contentPadding = PaddingValues(bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 val sel = places.count { it.status == PlaceStatus.SELECTED }
-                ScreenHeader("Lugares", if (sel > 0) "$sel escolhido(s) • ${places.size} no total" else "Compare opções e escolham juntos")
+                ScreenHeader("Lugares", if (sel > 0) "$sel escolhido(s) • ${places.size} no total" else "Compare opções e escolham juntos", onBack)
                 if (places.isNotEmpty()) ChipRow(
                     listOf("todos") + PlaceStatus.all, filter,
                     { if (it == "todos") "Todos" else PlaceStatus.label(it) }, { filter = it },
@@ -127,6 +128,7 @@ fun PlacesScreen(vm: MainViewModel) {
                         if (p.address.isNotBlank()) SmallAction(Icons.Outlined.Map, "Mapa") { launch("geo:0,0?q=" + Uri.encode(p.address)) }
                         if (p.link.isNotBlank()) SmallAction(Icons.Outlined.Link, "Link") { launch(if (p.link.startsWith("http")) p.link else "https://${p.link}") }
                         if (p.phone.isNotBlank()) SmallAction(Icons.Outlined.Call, "Ligar") { launch("tel:${p.phone}") }
+                        SmallAction(null, "💬") { vm.sendMessage("O que acha desse lugar?", "📍 ${p.name}", "places") }
                         Spacer(Modifier.weight(1f))
                         when (p.status) {
                             PlaceStatus.SELECTED -> SmallAction(null, "Desfazer") { vm.update(Collections.PLACES, p.id, "status" to PlaceStatus.OPTION) }

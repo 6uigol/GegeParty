@@ -269,10 +269,17 @@ fun HomeScreen(vm: MainViewModel, open: (String) -> Unit) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
                 SectionTitle("Atalhos")
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Shortcut("📍", "Lugares", Gege.PinkSoft, Modifier.weight(1f)) { open("places") }
                     Shortcut("💡", "Ideias", Gege.YellowSoft, Modifier.weight(1f)) { open("ideas") }
                     Shortcut("📝", "Notas", Gege.LilacSoft, Modifier.weight(1f)) { open("notes") }
                     Shortcut("👯", "Convidados", Gege.MintSoft, Modifier.weight(1f)) { open("guests") }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Shortcut("💰", "Gastos", Gege.SkySoft, Modifier.weight(1f)) { open("budget") }
+                    Shortcut("💬", "Chat", Gege.PinkSoft, Modifier.weight(1f)) { open("chat") }
+                    Shortcut("📅", "Agenda", Gege.YellowSoft, Modifier.weight(1f)) { open("agenda") }
+                    Shortcut("⚙️", "Ajustes", Gege.LilacSoft, Modifier.weight(1f)) { open("settings") }
                 }
             }
         }

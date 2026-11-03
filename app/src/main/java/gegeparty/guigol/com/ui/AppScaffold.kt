@@ -9,12 +9,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -37,6 +42,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import gegeparty.guigol.com.ui.screens.AgendaScreen
 import gegeparty.guigol.com.ui.screens.BudgetScreen
+import gegeparty.guigol.com.ui.screens.ChatScreen
 import gegeparty.guigol.com.ui.screens.GuestsScreen
 import gegeparty.guigol.com.ui.screens.HomeScreen
 import gegeparty.guigol.com.ui.screens.IdeasScreen
@@ -52,8 +58,8 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 private val tabs = listOf(
     Tab("home", "Início", Icons.Outlined.Home, Icons.Filled.Home),
     Tab("tasks", "Tarefas", Icons.Outlined.Checklist, Icons.Filled.Checklist),
+    Tab("chat", "Chat", Icons.Outlined.ChatBubbleOutline, Icons.Filled.ChatBubble),
     Tab("agenda", "Agenda", Icons.Outlined.CalendarMonth, Icons.Filled.CalendarMonth),
-    Tab("places", "Lugares", Icons.Outlined.Place, Icons.Filled.Place),
     Tab("more", "Mais", Icons.Outlined.GridView, Icons.Filled.GridView),
 )
 private val tabRoutes = tabs.map { it.route }.toSet()
@@ -73,6 +79,7 @@ fun AppScaffold(vm: MainViewModel, startRoute: String?, onStartConsumed: () -> U
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination?.route
+    val unread by vm.unread.collectAsStateWithLifecycle()
 
     LaunchedEffect(startRoute) {
         if (startRoute != null) { nav.go(startRoute); onStartConsumed() }
@@ -80,6 +87,7 @@ fun AppScaffold(vm: MainViewModel, startRoute: String?, onStartConsumed: () -> U
 
     Scaffold(
         containerColor = Gege.Bg,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
                 tabs.forEach { t ->
@@ -88,7 +96,11 @@ fun AppScaffold(vm: MainViewModel, startRoute: String?, onStartConsumed: () -> U
                     NavigationBarItem(
                         selected = selected,
                         onClick = { nav.go(t.route) },
-                        icon = { Icon(if (selected) t.selectedIcon else t.icon, t.label) },
+                        icon = {
+                            BadgedBox(badge = {
+                                if (t.route == "chat" && unread > 0 && current != "chat") Badge(containerColor = Gege.Pink) { Text("$unread") }
+                            }) { Icon(if (selected) t.selectedIcon else t.icon, t.label) }
+                        },
                         label = { Text(t.label) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Gege.Pink,
@@ -101,7 +113,7 @@ fun AppScaffold(vm: MainViewModel, startRoute: String?, onStartConsumed: () -> U
         },
     ) { pad ->
         NavHost(
-            nav, startDestination = "home", modifier = Modifier.padding(pad),
+            nav, startDestination = "home", modifier = Modifier.padding(pad).consumeWindowInsets(pad),
             enterTransition = { fadeIn() + slideInHorizontally { it / 12 } },
             exitTransition = { fadeOut() },
             popEnterTransition = { fadeIn() },
@@ -112,7 +124,8 @@ fun AppScaffold(vm: MainViewModel, startRoute: String?, onStartConsumed: () -> U
             composable("home") { HomeScreen(vm, open) }
             composable("tasks") { TasksScreen(vm) }
             composable("agenda") { AgendaScreen(vm) }
-            composable("places") { PlacesScreen(vm) }
+            composable("chat") { ChatScreen(vm, open) }
+            composable("places") { PlacesScreen(vm, back) }
             composable("more") { MoreScreen(vm, open) }
             composable("ideas") { IdeasScreen(vm, back) }
             composable("notes") { NotesScreen(vm, back) }

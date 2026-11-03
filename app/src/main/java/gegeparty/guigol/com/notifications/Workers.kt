@@ -30,6 +30,8 @@ object Prefs {
 
     fun notifyNews(ctx: Context) = get(ctx).getBoolean("notify_news", true)
     fun notifyCountdown(ctx: Context) = get(ctx).getBoolean("notify_countdown", true)
+    fun notifyChat(ctx: Context) = get(ctx).getBoolean("notify_chat", true)
+    fun setNotifyChat(ctx: Context, v: Boolean) = get(ctx).edit().putBoolean("notify_chat", v).apply()
     fun setNotifyNews(ctx: Context, v: Boolean) = get(ctx).edit().putBoolean("notify_news", v).apply()
     fun setNotifyCountdown(ctx: Context, v: Boolean) = get(ctx).edit().putBoolean("notify_countdown", v).apply()
 }
@@ -124,6 +126,22 @@ class SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
                         else "$who adicionou ${fromPartner.size} novidades (${pair.first} e mais)"
                         Notifier.show(ctx, Notifier.CH_NEWS, col.hashCode(), "✨ Novidade no GegeParty", text, pair.second)
                     }
+                }
+            }
+
+            // Mensagens novas do chat
+            if (Prefs.notifyChat(ctx) && last < now) {
+                val since = maxOf(last, prefs.getLong("last_chat_notified", 0L))
+                val msgs = Repo.db.collection(Collections.MESSAGES).whereGreaterThan("createdAt", since).get().await().documents
+                    .filter { (it.getString("sender") ?: me) != me && me !in ((it.get("readBy") as? List<*>) ?: emptyList<Any>()) }
+                    .sortedBy { it.getLong("createdAt") ?: 0L }
+                if (msgs.isNotEmpty()) {
+                    val who = Users.display(Users.other(me))
+                    val text = msgs.takeLast(5).joinToString("\n") { d ->
+                        d.getString("text").orEmpty().ifBlank { d.getString("attachTitle").orEmpty() }
+                    }
+                    prefs.edit().putLong("last_chat_notified", msgs.maxOf { it.getLong("createdAt") ?: 0L }).apply()
+                    Notifier.show(ctx, Notifier.CH_CHAT, 555, "💬 $who" + if (msgs.size > 1) " (${msgs.size} mensagens)" else "", text, "chat")
                 }
             }
 

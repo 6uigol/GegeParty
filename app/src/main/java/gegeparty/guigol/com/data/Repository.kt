@@ -80,6 +80,48 @@ object Repo {
         db.collection(Collections.CONFIG).document(Collections.PARTY_DOC).set(config, SetOptions.merge())
     }
 
+    // ---------- Chat ----------
+    fun listenMessages(): Flow<List<ChatMessage>> = callbackFlow {
+        val reg = db.collection(Collections.MESSAGES)
+            .orderBy("createdAt", Query.Direction.ASCENDING)
+            .limitToLast(400)
+            .addSnapshotListener { snap, err ->
+                if (err != null || snap == null) return@addSnapshotListener
+                trySend(snap.documents.mapNotNull { d -> d.toObject(ChatMessage::class.java)?.also { it.id = d.id } })
+            }
+        awaitClose { reg.remove() }
+    }
+
+    fun sendMessage(msg: ChatMessage) {
+        db.collection(Collections.MESSAGES).add(msg)
+    }
+
+    /** Mesmo emoji de novo remove a reação. */
+    fun react(id: String, user: String, emoji: String?) {
+        val v: Any = if (emoji == null) FieldValue.delete() else emoji
+        db.collection(Collections.MESSAGES).document(id).update("reactions.$user", v)
+    }
+
+    fun markRead(ids: List<String>, user: String) {
+        if (ids.isEmpty()) return
+        val batch = db.batch()
+        ids.take(400).forEach { batch.update(db.collection(Collections.MESSAGES).document(it), "readBy", FieldValue.arrayUnion(user)) }
+        batch.commit()
+    }
+
+    fun setTyping(user: String, typing: Boolean) {
+        db.collection(Collections.PRESENCE).document("typing")
+            .set(mapOf(user to if (typing) System.currentTimeMillis() else 0L), SetOptions.merge())
+    }
+
+    fun listenTyping(): Flow<Map<String, Long>> = callbackFlow {
+        val reg = db.collection(Collections.PRESENCE).document("typing").addSnapshotListener { snap, _ ->
+            val m = snap?.data.orEmpty().mapNotNull { (k, v) -> (v as? Number)?.let { k to it.toLong() } }.toMap()
+            trySend(m)
+        }
+        awaitClose { reg.remove() }
+    }
+
     fun seedStarterPlan(user: String) {
         val batch = db.batch()
         val now = System.currentTimeMillis()

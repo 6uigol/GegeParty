@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.Query
 import gegeparty.guigol.com.data.AuthRepository
+import gegeparty.guigol.com.data.ChatMessage
 import gegeparty.guigol.com.data.Collections
 import gegeparty.guigol.com.data.EventItem
 import gegeparty.guigol.com.data.Expense
@@ -20,6 +21,9 @@ import gegeparty.guigol.com.data.Repo
 import gegeparty.guigol.com.data.TaskItem
 import gegeparty.guigol.com.data.TaskStatus
 import gegeparty.guigol.com.data.Users
+import gegeparty.guigol.com.notifications.AppState
+import gegeparty.guigol.com.notifications.Notifier
+import gegeparty.guigol.com.notifications.Prefs
 import gegeparty.guigol.com.notifications.ReminderScheduler
 import gegeparty.guigol.com.notifications.SyncWorker
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -82,6 +86,41 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val config: StateFlow<PartyConfig> =
         _user.flatMapLatest { u -> if (u == null) flowOf(PartyConfig()) else Repo.listenConfig() }
             .stateIn(viewModelScope, SharingStarted.Eagerly, PartyConfig())
+
+    val messages: StateFlow<List<ChatMessage>> =
+        _user.flatMapLatest { u -> if (u == null) flowOf(emptyList()) else Repo.listenMessages() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val typing: StateFlow<Map<String, Long>> =
+        _user.flatMapLatest { u -> if (u == null) flowOf(emptyMap()) else Repo.listenTyping() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    val unread: StateFlow<Int> = combine(messages, _user) { msgs, u ->
+        if (u == null) 0 else msgs.count { it.sender != u && u !in it.readBy }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    init {
+        // Notificação instantânea de chat enquanto o app está vivo em segundo plano
+        val startedAt = System.currentTimeMillis()
+        viewModelScope.launch {
+            var notifiedUntil = startedAt
+            messages.collect { msgs ->
+                val u = _user.value ?: return@collect
+                val fresh = msgs.filter { it.sender != u && it.createdAt > notifiedUntil && u !in it.readBy }
+                if (fresh.isEmpty()) return@collect
+                notifiedUntil = fresh.maxOf { it.createdAt }
+                val ctx = getApplication<Application>()
+                Prefs.get(ctx).edit().putLong("last_chat_notified", notifiedUntil).apply()
+                if (Prefs.notifyChat(ctx) && !(AppState.inForeground && AppState.onChat)) {
+                    Notifier.show(
+                        ctx, Notifier.CH_CHAT, 555,
+                        "💬 ${Users.display(Users.other(u))}",
+                        fresh.takeLast(5).joinToString("\n") { it.text.ifBlank { it.attachTitle } }, "chat"
+                    )
+                }
+            }
+        }
+    }
 
     init {
         // Lembretes locais sempre em dia com a agenda compartilhada
@@ -228,6 +267,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun saveGuest(g: Guest) = Repo.save(Collections.GUESTS, if (g.id.isBlank()) g.copy(createdBy = me, createdAt = now()) else g)
     fun saveExpense(x: Expense) = Repo.save(Collections.EXPENSES, if (x.id.isBlank()) x.copy(createdBy = me, createdAt = now()) else x)
     fun saveConfig(c: PartyConfig) = Repo.saveConfig(c)
+
+    // ---------- Chat ----------
+    private var lastTypingSent = 0L
+
+    fun sendMessage(text: String, attachTitle: String = "", attachRoute: String = "") {
+        if (text.isBlank() && attachTitle.isBlank()) return
+        Repo.sendMessage(ChatMessage(text = text.trim(), sender = me, createdAt = now(), readBy = listOf(me), attachTitle = attachTitle, attachRoute = attachRoute))
+        Repo.setTyping(me, false); lastTypingSent = 0L
+    }
+
+    fun react(m: ChatMessage, emoji: String) = Repo.react(m.id, me, if (m.reactions[me] == emoji) null else emoji)
+
+    fun markAllRead() {
+        val ids = messages.value.filter { it.sender != me && me !in it.readBy }.map { it.id }
+        Repo.markRead(ids, me)
+    }
+
+    fun onTyping(text: String) {
+        val t = now()
+        if (text.isBlank()) { if (lastTypingSent > 0) { Repo.setTyping(me, false); lastTypingSent = 0L }; return }
+        if (t - lastTypingSent > 3_000) { Repo.setTyping(me, true); lastTypingSent = t }
+    }
 
     fun update(col: String, id: String, vararg fields: Pair<String, Any?>) = Repo.update(col, id, fields.toMap())
     fun delete(col: String, id: String) = Repo.delete(col, id)

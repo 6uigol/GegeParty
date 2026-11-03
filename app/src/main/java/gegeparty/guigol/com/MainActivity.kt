@@ -50,6 +50,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart(); gegeparty.guigol.com.notifications.AppState.inForeground = true
+    }
+
+    override fun onStop() {
+        super.onStop(); gegeparty.guigol.com.notifications.AppState.inForeground = false
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         startRoute.value = intent.getStringExtra(EXTRA_ROUTE)

@@ -14,10 +14,17 @@ import androidx.core.content.ContextCompat
 import gegeparty.guigol.com.MainActivity
 import gegeparty.guigol.com.R
 
+/** Estado simples do app para decidir se mostra notificação de chat na hora. */
+object AppState {
+    @Volatile var inForeground = false
+    @Volatile var onChat = false
+}
+
 object Notifier {
     const val CH_REMINDERS = "lembretes"
     const val CH_NEWS = "novidades"
     const val CH_COUNTDOWN = "contagem"
+    const val CH_CHAT = "chat"
 
     fun createChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -25,6 +32,7 @@ object Notifier {
             listOf(
                 NotificationChannel(CH_REMINDERS, "Lembretes da agenda", NotificationManager.IMPORTANCE_HIGH),
                 NotificationChannel(CH_NEWS, "Novidades do(a) parceiro(a)", NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(CH_CHAT, "Mensagens do chat", NotificationManager.IMPORTANCE_HIGH),
                 NotificationChannel(CH_COUNTDOWN, "Contagem regressiva", NotificationManager.IMPORTANCE_LOW),
             )
         )
