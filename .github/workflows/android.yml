@@ -24,7 +24,12 @@ jobs:
       - name: Build release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
+          set -o pipefail
+          ./gradlew assembleRelease 2>&1 | tee build.log
+
+      - name: Show compile errors
+        if: failure()
+        run: grep -E "^e: |What went wrong" -A3 build.log | head -150
 
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk GegeParty.apk
