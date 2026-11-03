@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// GegeParty — somente "baixinha" e "querido" podem ler e escrever.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isCouple() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'baixinha@gegeparty.app',
+          'querido@gegeparty.app'
+        ];
+    }
+
+    match /{document=**} {
+      allow read, write: if isCouple();
+    }
+  }
+}

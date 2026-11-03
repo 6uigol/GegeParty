@@ -1,0 +1,12 @@
+<resources>
+    <color name="gege_bg">#FFFBF7</color>
+    <color name="gege_pink">#FF6F91</color>
+    <color name="gege_yellow">#FFC75F</color>
+
+    <style name="Theme.GegeParty" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/gege_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

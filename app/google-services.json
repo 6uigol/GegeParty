@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "611198537482",
+    "project_id": "gegeparty-fe1ac",
+    "storage_bucket": "gegeparty-fe1ac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:611198537482:android:0c834d61fe1964d0e0f4f3",
+        "android_client_info": {
+          "package_name": "gegeparty.guigol.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBczRVctQr1_rvsQZPHwwFIAMchEHn2fOA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
