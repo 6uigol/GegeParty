@@ -29,7 +29,8 @@ jobs:
 
       - name: Show compile errors
         if: failure()
-        run: grep -E "^e: |What went wrong" -A3 build.log | head -150
+        run: |
+          grep -E "^e: |What went wrong" -A3 build.log | head -150
 
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk GegeParty.apk
